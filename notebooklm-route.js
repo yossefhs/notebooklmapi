@@ -6,19 +6,8 @@ const os = require('os');
 
 const execAsync = util.promisify(exec);
 
-let notebooklmCmd = 'notebooklm';
-const searchPaths = (process.env.PATH || '').split(':').concat([
-  '/opt/venv/bin', '/root/.local/bin', '/usr/local/bin', '/home/app/.local/bin'
-]);
-for (const p of searchPaths) {
-  if (!p) continue;
-  const full = path.join(p, 'notebooklm');
-  if (fs.existsSync(full)) {
-    notebooklmCmd = full;
-    console.log('[NotebookLM] Exécutable trouvé :', notebooklmCmd);
-    break;
-  }
-}
+// Solution robuste pour exécuter notebooklm-py sans dépendre du PATH des binaires (pip install)
+const notebooklmCmd = `python3 -c "import sys; from notebooklm.notebooklm_cli import main; sys.argv=['notebooklm'] + sys.argv[1:]; sys.exit(main())"`;
 
 const AUTH_JSON = process.env.NOTEBOOKLM_AUTH_JSON;
 const API_KEY   = process.env.NOTEBOOKLM_API_KEY || 'changeme';
