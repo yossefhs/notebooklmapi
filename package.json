@@ -1,0 +1,12 @@
+{
+  "name": "notebooklm-server",
+  "version": "1.0.0",
+  "description": "Standalone NotebookLM API Server",
+  "main": "index.js",
+  "scripts": {
+    "start": "bash start.sh"
+  },
+  "dependencies": {
+    "express": "^4.19.2"
+  }
+}
