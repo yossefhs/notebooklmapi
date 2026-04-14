@@ -7,7 +7,7 @@ RUN apt-get update && apt-get install -y python3 python3-pip && rm -rf /var/lib/
 WORKDIR /app
 
 # Install Python package globally
-RUN pip3 install notebooklm-py
+RUN pip3 install notebooklm-py --break-system-packages
 
 # Copy Node configuration and install
 COPY package.json ./
