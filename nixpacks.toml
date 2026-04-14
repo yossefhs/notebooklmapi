@@ -1,0 +1,11 @@
+[providers]
+  nixpkgs = ["python3", "python3Packages.pip", "nodejs"]
+
+[phases.install]
+  cmds = ["npm install", "pip3 install notebooklm-py"]
+
+[phases.build]
+  cmds = []
+
+[start]
+  cmd = "node index.js"
