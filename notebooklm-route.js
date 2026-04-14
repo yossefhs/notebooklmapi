@@ -33,7 +33,8 @@ module.exports = function (app) {
     }
     try {
       writeAuthIfNeeded();
-      const { stdout: listOut } = await execAsync('notebooklm list --json');
+      const runOpts = { env: { ...process.env, PATH: process.env.PATH + ':/root/.local/bin:$HOME/.local/bin' } };
+      const { stdout: listOut } = await execAsync('notebooklm list --json', runOpts);
       const notebooks = JSON.parse(listOut);
       const found = notebooks.find(n =>
         n.title.toLowerCase().includes(notebook.toLowerCase())
@@ -46,7 +47,7 @@ module.exports = function (app) {
       }
       const safeQ = question.replace(/"/g, '\\"');
       const cmd = `notebooklm use ${found.id} && notebooklm ask "${safeQ}"`;
-      const { stdout: answer } = await execAsync(cmd, { timeout: 60000 });
+      const { stdout: answer } = await execAsync(cmd, { ...runOpts, timeout: 60000 });
       res.json({
         notebook: found.title,
         question,
@@ -62,7 +63,8 @@ module.exports = function (app) {
   app.get('/notebooklm/list', authMiddleware, async (req, res) => {
     try {
       writeAuthIfNeeded();
-      const { stdout } = await execAsync('notebooklm list --json');
+      const runOpts = { env: { ...process.env, PATH: process.env.PATH + ':/root/.local/bin:$HOME/.local/bin' } };
+      const { stdout } = await execAsync('notebooklm list --json', runOpts);
       const notebooks = JSON.parse(stdout);
       res.json(notebooks.map(n => ({ id: n.id, title: n.title })));
     } catch (err) {
@@ -85,13 +87,14 @@ module.exports = function (app) {
           task._ran = true;
           try {
             writeAuthIfNeeded();
+            const runOpts = { env: { ...process.env, PATH: process.env.PATH + ':/root/.local/bin:$HOME/.local/bin' } };
             const safeQ = task.question.replace(/"/g, '\\"');
-            const { stdout: listOut } = await execAsync('notebooklm list --json');
+            const { stdout: listOut } = await execAsync('notebooklm list --json', runOpts);
             const notebooks = JSON.parse(listOut);
             const found = notebooks.find(n => n.title.toLowerCase().includes(task.notebook.toLowerCase()));
             if (!found) return;
             const cmd = `notebooklm use ${found.id} && notebooklm ask "${safeQ}"`;
-            const { stdout } = await execAsync(cmd, { timeout: 60000 });
+            const { stdout } = await execAsync(cmd, { ...runOpts, timeout: 60000 });
             task.lastAnswer = stdout.trim();
             task.lastRun = new Date().toISOString();
           } catch (e) {
