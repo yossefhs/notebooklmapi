@@ -6,6 +6,20 @@ const os = require('os');
 
 const execAsync = util.promisify(exec);
 
+let notebooklmCmd = 'notebooklm';
+const searchPaths = (process.env.PATH || '').split(':').concat([
+  '/opt/venv/bin', '/root/.local/bin', '/usr/local/bin', '/home/app/.local/bin'
+]);
+for (const p of searchPaths) {
+  if (!p) continue;
+  const full = path.join(p, 'notebooklm');
+  if (fs.existsSync(full)) {
+    notebooklmCmd = full;
+    console.log('[NotebookLM] Exécutable trouvé :', notebooklmCmd);
+    break;
+  }
+}
+
 const AUTH_JSON = process.env.NOTEBOOKLM_AUTH_JSON;
 const API_KEY   = process.env.NOTEBOOKLM_API_KEY || 'changeme';
 
@@ -33,8 +47,7 @@ module.exports = function (app) {
     }
     try {
       writeAuthIfNeeded();
-      const runOpts = { env: { ...process.env, PATH: process.env.PATH + ':/root/.local/bin:$HOME/.local/bin' } };
-      const { stdout: listOut } = await execAsync('notebooklm list --json', runOpts);
+      const { stdout: listOut } = await execAsync(`${notebooklmCmd} list --json`);
       const notebooks = JSON.parse(listOut);
       const found = notebooks.find(n =>
         n.title.toLowerCase().includes(notebook.toLowerCase())
@@ -46,8 +59,8 @@ module.exports = function (app) {
         });
       }
       const safeQ = question.replace(/"/g, '\\"');
-      const cmd = `notebooklm use ${found.id} && notebooklm ask "${safeQ}"`;
-      const { stdout: answer } = await execAsync(cmd, { ...runOpts, timeout: 60000 });
+      const cmd = `${notebooklmCmd} use ${found.id} && ${notebooklmCmd} ask "${safeQ}"`;
+      const { stdout: answer } = await execAsync(cmd, { timeout: 60000 });
       res.json({
         notebook: found.title,
         question,
@@ -63,8 +76,7 @@ module.exports = function (app) {
   app.get('/notebooklm/list', authMiddleware, async (req, res) => {
     try {
       writeAuthIfNeeded();
-      const runOpts = { env: { ...process.env, PATH: process.env.PATH + ':/root/.local/bin:$HOME/.local/bin' } };
-      const { stdout } = await execAsync('notebooklm list --json', runOpts);
+      const { stdout } = await execAsync(`${notebooklmCmd} list --json`);
       const notebooks = JSON.parse(stdout);
       res.json(notebooks.map(n => ({ id: n.id, title: n.title })));
     } catch (err) {
@@ -87,14 +99,13 @@ module.exports = function (app) {
           task._ran = true;
           try {
             writeAuthIfNeeded();
-            const runOpts = { env: { ...process.env, PATH: process.env.PATH + ':/root/.local/bin:$HOME/.local/bin' } };
             const safeQ = task.question.replace(/"/g, '\\"');
-            const { stdout: listOut } = await execAsync('notebooklm list --json', runOpts);
+            const { stdout: listOut } = await execAsync(`${notebooklmCmd} list --json`);
             const notebooks = JSON.parse(listOut);
             const found = notebooks.find(n => n.title.toLowerCase().includes(task.notebook.toLowerCase()));
             if (!found) return;
-            const cmd = `notebooklm use ${found.id} && notebooklm ask "${safeQ}"`;
-            const { stdout } = await execAsync(cmd, { ...runOpts, timeout: 60000 });
+            const cmd = `${notebooklmCmd} use ${found.id} && ${notebooklmCmd} ask "${safeQ}"`;
+            const { stdout } = await execAsync(cmd, { timeout: 60000 });
             task.lastAnswer = stdout.trim();
             task.lastRun = new Date().toISOString();
           } catch (e) {
